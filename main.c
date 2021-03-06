@@ -2,40 +2,70 @@
 #include <windows.h>
 #include <pthread.h>
 
-// void getTemp();
-int regTemp(double current, double target);
+int regTemp(double target);
+
+void changeTemp(double temperature);
+
+double readTemp();
 
 int main(){
 
-    double current_temp = 100;
-    double target_temp = 250;
-
-    int x = regTemp(current_temp, target_temp);
-    printf("Resultado: %d\n", x);
+    int x;
+    x = regTemp(100);
+    printf("RegTemp: %d\n", x);
 
     return 0;
+
 }
 
-// void getTemp(){
-//     printf("Temperatura da Extrusora:\n");
+int regTemp(double target){
 
-// }
+    double current = readTemp();
 
-int regTemp(double current, double target){
-    double diff = target - current;
+    // Joao pensa nisto do threshold
+    double threshold = 0.05;
+    double diff;
     int flag = 0;
 
-    while (flag != 1){
+    while(flag == 0) {
+        
         diff = target - current;
-        if (diff != 0){
-            // Central code
-            current = target;
-        } else {
+
+        if(diff == 0) {
+
             flag = 1;
+
+        } 
+        else {
+
+            // Yes
+            // Change Temperature
+            changeTemp(target);
+            Sleep(2000);    // Wait 2 sec
+            // Read Temperature Value
+            current = readTemp();
+
         }
-        // Wait 1 sec
-        Sleep(1000);
+        
     }
 
     return flag;
+
+}
+
+void changeTemp(double temperature){
+
+    printf("Changed Temperature to: %lf\n", temperature);
+
+}
+
+double readTemp(){
+
+    double temp;
+
+    printf("Temperature?\n");
+    scanf("%lf", &temp);
+
+    return temp;
+
 }
