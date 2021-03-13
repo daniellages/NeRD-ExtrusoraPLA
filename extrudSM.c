@@ -4,13 +4,11 @@ int st_start_time;
 
 void sm_execute(extrudSM_t *SM) {
 
-    st_start_time = get_current_time();
-
     switch (SM->current_state) {
 
         case st_Init:
 
-            init_temp();
+            change_temp(TARGET);
             
             // Check if we can't extrude
             if(check_coil_full() || check_hopper_empty()) {
@@ -27,6 +25,7 @@ void sm_execute(extrudSM_t *SM) {
             // Timout handler
             if(get_current_time() - st_start_time >= TIMEOUT) {
                 SM->current_state = st_Init;
+                st_start_time = get_current_time();
                 break;
             }
 
@@ -36,12 +35,14 @@ void sm_execute(extrudSM_t *SM) {
 
         case st_Extrude:
 
-            get_temp();
             get_diameter();
-            change_motor_speed("extrude");
-            change_motor_speed("coil");
-            change_hopper();
-            change_temp();
+            change_motor_speed_extrude(15);
+            change_motor_speed_coil(15);
+            change_hopper(true);
+
+            if(get_temp() != TARGET) {
+                change_temp(TARGET);
+            }
 
             // Check if can extrude
             if(!check_coil_full() && !check_hopper_empty()) {
@@ -65,11 +66,13 @@ void sm_execute(extrudSM_t *SM) {
 
         case st_Clean:
 
-            change_temp();
-            get_temp();
-            change_hopper();
-            change_motor_speed("extrude");
-            change_motor_speed("coil");
+            if(get_temp() != TARGET) {
+                change_temp(TARGET);
+            }
+
+            change_hopper(false);
+            change_motor_speed_extrude(9001);
+            change_motor_speed_coil(42069);
 
             SM->current_state = st_Stop;
 
@@ -77,19 +80,18 @@ void sm_execute(extrudSM_t *SM) {
         
         case st_Stop:
 
-            get_temp();
-            change_temp();
-            change_motor_speed("extrude");
-            change_motor_speed("coil");
-            change_hopper();
+            change_temp(0);
+            change_motor_speed_extrude(0);
+            change_motor_speed_coil(0);
+            change_hopper(false);
 
             // Check if can extrude
             if(!check_coil_full() && !check_hopper_empty()) {
                 SM->current_state = st_Extrude;
                 break;
+            } else {
+                SM->current_state = st_Stop;
             }
-
-            SM->current_state = st_Stop;
 
             break;
 
@@ -103,5 +105,6 @@ void sm_execute(extrudSM_t *SM) {
 
 void sm_init(extrudSM_t *SM){
     SM->initial_state = st_Init;
-    SM->current_state = SM->current_state;
+    SM->current_state = SM->initial_state;
+    st_start_time = get_current_time();
 }
